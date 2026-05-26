@@ -53,7 +53,8 @@ export function AppSidebar() {
             <SidebarMenu>
               {navItems.map((item) => {
                 const active =
-                  pathname === item.href || pathname.startsWith(`${item.href}/`);
+                  pathname === item.href ||
+                  (pathname?.startsWith(`${item.href}/`) ?? false);
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={active}>

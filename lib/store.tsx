@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { initialData } from "./mock-data";
@@ -58,8 +58,13 @@ function toStudentId(id: string) {
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DashboardState>(initialData);
-  const students = useQuery(api.students.list);
-  const creditTransactions = useQuery(api.credits.listTransactions, {});
+  const { isAuthenticated, isLoading: isAuthLoading } = useConvexAuth();
+  const canQuery = isAuthenticated && !isAuthLoading;
+  const students = useQuery(api.students.list, canQuery ? {} : "skip");
+  const creditTransactions = useQuery(
+    api.credits.listTransactions,
+    canQuery ? {} : "skip"
+  );
   const createStudent = useMutation(api.students.create);
   const updateStudent = useMutation(api.students.update);
   const addManualCredits = useMutation(api.credits.addManual);
