@@ -29,6 +29,7 @@ export interface CreditTransaction {
   type: CreditType;
   description: string;
   date: string;
+  validUntil?: string;
 }
 
 export interface PricingOption {

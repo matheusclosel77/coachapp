@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Users,
 } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 import {
   Sidebar,
   SidebarContent,
@@ -69,7 +70,13 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-muted-foreground">Dados mockados em memória</p>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium">Conta</p>
+            <p className="text-xs text-muted-foreground">Clerk ativo</p>
+          </div>
+          <UserButton />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );

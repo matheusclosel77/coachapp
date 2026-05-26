@@ -205,13 +205,14 @@ export default function ClientePerfilPage({
                   <TableHead>Data</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Descrição</TableHead>
+                  <TableHead>Validade</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {clientCredits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-16 text-center text-muted-foreground">
+                    <TableCell colSpan={5} className="h-16 text-center text-muted-foreground">
                       Nenhuma movimentação.
                     </TableCell>
                   </TableRow>
@@ -225,6 +226,9 @@ export default function ClientePerfilPage({
                         </Badge>
                       </TableCell>
                       <TableCell>{tx.description}</TableCell>
+                      <TableCell>
+                        {tx.validUntil ? formatDate(tx.validUntil) : "Sem validade"}
+                      </TableCell>
                       <TableCell className="text-right font-medium">
                         {tx.type === "add" ? "+" : "-"}
                         {tx.amount}

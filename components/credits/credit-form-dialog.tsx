@@ -37,6 +37,11 @@ export function CreditFormDialog({
   const [clientId, setClientId] = useState("");
   const [type, setType] = useState<CreditType>("add");
   const [amount, setAmount] = useState(1);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<
+    "cash" | "pix" | "card" | "bank_transfer" | "other"
+  >("pix");
+  const [validUntil, setValidUntil] = useState("");
   const [description, setDescription] = useState("");
 
   useEffect(() => {
@@ -44,6 +49,9 @@ export function CreditFormDialog({
       setClientId(preselectedClientId ?? "");
       setType("add");
       setAmount(1);
+      setPaymentAmount("");
+      setPaymentMethod("pix");
+      setValidUntil("");
       setDescription("");
     }
   }, [open, preselectedClientId]);
@@ -56,6 +64,12 @@ export function CreditFormDialog({
       amount,
       type,
       description: description.trim() || (type === "add" ? "Créditos adicionados" : "Créditos consumidos"),
+      validUntil: validUntil || undefined,
+      paymentAmountCents:
+        type === "add" && paymentAmount
+          ? Math.round(Number(paymentAmount.replace(",", ".")) * 100)
+          : undefined,
+      paymentMethod,
     });
     onOpenChange(false);
   }
@@ -105,6 +119,53 @@ export function CreditFormDialog({
               required
             />
           </div>
+          {type === "add" && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="payment-amount">Valor pago (R$)</Label>
+                <Input
+                  id="payment-amount"
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="Opcional"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Método</Label>
+                <Select
+                  value={paymentMethod}
+                  onValueChange={(v) =>
+                    setPaymentMethod(
+                      v as "cash" | "pix" | "card" | "bank_transfer" | "other"
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="card">Cartão</SelectItem>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="bank_transfer">Transferência</SelectItem>
+                    <SelectItem value="other">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="valid-until">Validade dos créditos</Label>
+                <Input
+                  id="valid-until"
+                  type="date"
+                  value={validUntil}
+                  onChange={(e) => setValidUntil(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="credit-desc">Descrição</Label>
             <Textarea

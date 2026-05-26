@@ -92,13 +92,14 @@ export default function CreditosPage() {
               <TableHead>Cliente</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Descrição</TableHead>
+              <TableHead>Validade</TableHead>
               <TableHead className="text-right">Quantidade</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedTransactions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                   Nenhuma movimentação registrada.
                 </TableCell>
               </TableRow>
@@ -115,6 +116,9 @@ export default function CreditosPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{tx.description}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {tx.validUntil ? formatDate(tx.validUntil) : "Sem validade"}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {tx.type === "add" ? "+" : "-"}
                     {tx.amount}

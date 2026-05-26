@@ -3,7 +3,8 @@ import { Geist_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { Providers } from "@/components/providers";
+import { AppFrame } from "@/components/app-frame";
 
 const ibmPlexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -29,9 +30,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className={cn("font-sans", ibmPlexSans.variable)}>
       <body className={`${geistMono.variable} antialiased`}>
-        <TooltipProvider>
-          <DashboardShell>{children}</DashboardShell>
-        </TooltipProvider>
+        <Providers>
+          <TooltipProvider>
+            <AppFrame>{children}</AppFrame>
+          </TooltipProvider>
+        </Providers>
       </body>
     </html>
   );

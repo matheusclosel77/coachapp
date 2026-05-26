@@ -8,6 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { initialData } from "./mock-data";
 import { generateId } from "./helpers";
 import type {
@@ -23,7 +26,7 @@ import type {
 
 type DashboardContextValue = DashboardState & {
   getClientCredits: (clientId: string) => number;
-  addClient: (data: Omit<Client, "id" | "createdAt">) => Client;
+  addClient: (data: Omit<Client, "id" | "createdAt">) => void;
   updateClient: (id: string, data: Partial<Omit<Client, "id" | "createdAt">>) => void;
   addContract: (data: Omit<Contract, "id">) => Contract;
   updateContract: (id: string, data: Partial<Omit<Contract, "id">>) => void;
@@ -38,6 +41,9 @@ type DashboardContextValue = DashboardState & {
     amount: number;
     type: CreditType;
     description: string;
+    validUntil?: string;
+    paymentAmountCents?: number;
+    paymentMethod?: "cash" | "pix" | "card" | "bank_transfer" | "other";
   }) => void;
   addClassSlot: (data: Omit<ClassSlot, "id">) => ClassSlot;
   updateClassSlot: (id: string, data: Partial<Omit<ClassSlot, "id">>) => void;
@@ -48,21 +54,70 @@ type DashboardContextValue = DashboardState & {
 
 const DashboardContext = createContext<DashboardContextValue | null>(null);
 
+function toStudentId(id: string) {
+  return id as Id<"students">;
+}
+
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DashboardState>(initialData);
+  const students = useQuery(api.students.list);
+  const creditTransactions = useQuery(api.credits.listTransactions, {});
+  const createStudent = useMutation(api.students.create);
+  const updateStudent = useMutation(api.students.update);
+  const addManualCredits = useMutation(api.credits.addManual);
+  const consumeCredits = useMutation(api.credits.consume);
+  const createPayment = useMutation(api.payments.create);
+
+  const clients = useMemo<Client[]>(
+    () =>
+      (students ?? []).map((student) => ({
+        id: student._id,
+        name: student.name,
+        email: student.email ?? "",
+        phone: student.phone ?? "",
+        notes: student.notes ?? "",
+        createdAt: new Date(student.createdAt).toISOString(),
+      })),
+    [students]
+  );
+
+  const convexCreditTransactions = useMemo<CreditTransaction[]>(
+    () =>
+      (creditTransactions ?? []).map((tx) => ({
+        id: tx._id,
+        clientId: tx.studentId,
+        amount: Math.abs(tx.amount),
+        type: tx.amount >= 0 ? "add" : "use",
+        description: tx.description ?? "",
+        date: new Date(tx.createdAt).toISOString(),
+        validUntil: tx.validUntil ? new Date(tx.validUntil).toISOString() : undefined,
+      })),
+    [creditTransactions]
+  );
 
   const getClientCredits = useCallback(
     (clientId: string) => {
-      return state.creditTransactions
-        .filter((t) => t.clientId === clientId)
-        .reduce((sum, t) => sum + (t.type === "add" ? t.amount : -t.amount), 0);
+      const now = Date.now();
+      const activeAdded = convexCreditTransactions
+        .filter(
+          (t) =>
+            t.clientId === clientId &&
+            t.type === "add" &&
+            (!t.validUntil || new Date(t.validUntil).getTime() >= now)
+        )
+        .reduce((sum, t) => sum + t.amount, 0);
+      const used = convexCreditTransactions
+        .filter((t) => t.clientId === clientId && t.type === "use")
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      return Math.max(activeAdded - used, 0);
     },
-    [state.creditTransactions]
+    [convexCreditTransactions]
   );
 
   const getClientById = useCallback(
-    (id: string) => state.clients.find((c) => c.id === id),
-    [state.clients]
+    (id: string) => clients.find((c) => c.id === id),
+    [clients]
   );
 
   const getContractById = useCallback(
@@ -70,24 +125,29 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     [state.contracts]
   );
 
-  const addClient = useCallback((data: Omit<Client, "id" | "createdAt">) => {
-    const client: Client = {
-      ...data,
-      id: generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    setState((s) => ({ ...s, clients: [...s.clients, client] }));
-    return client;
-  }, []);
+  const addClient = useCallback(
+    (data: Omit<Client, "id" | "createdAt">) => {
+      void createStudent({
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        notes: data.notes || undefined,
+      });
+    },
+    [createStudent]
+  );
 
   const updateClient = useCallback(
     (id: string, data: Partial<Omit<Client, "id" | "createdAt">>) => {
-      setState((s) => ({
-        ...s,
-        clients: s.clients.map((c) => (c.id === id ? { ...c, ...data } : c)),
-      }));
+      void updateStudent({
+        id: toStudentId(id),
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        notes: data.notes,
+      });
     },
-    []
+    [updateStudent]
   );
 
   const addContract = useCallback((data: Omit<Contract, "id">) => {
@@ -134,37 +194,68 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           contractSales: [...s.contractSales, sale],
         };
         if (option.creditsIncluded && option.creditsIncluded > 0) {
-          const tx: CreditTransaction = {
-            id: generateId(),
-            clientId: data.clientId,
-            amount: option.creditsIncluded,
-            type: "add",
+          void createPayment({
+            studentId: toStudentId(data.clientId),
+            amountCents: Math.round(option.price * 100),
+            method: "other",
+            status: "paid",
+            creditsGranted: option.creditsIncluded,
+            creditsValidUntil: undefined,
             description: `${contract.name} – ${option.label}`,
-            date: sale.soldAt,
-          };
-          next.creditTransactions = [...s.creditTransactions, tx];
+          });
         }
         return next;
       });
 
       return sale;
     },
-    [state.contracts]
+    [createPayment, state.contracts]
   );
 
   const addCreditTransaction = useCallback(
-    (data: { clientId: string; amount: number; type: CreditType; description: string }) => {
-      const tx: CreditTransaction = {
-        id: generateId(),
-        ...data,
-        date: new Date().toISOString(),
-      };
-      setState((s) => ({
-        ...s,
-        creditTransactions: [...s.creditTransactions, tx],
-      }));
+    (data: {
+      clientId: string;
+      amount: number;
+      type: CreditType;
+      description: string;
+      validUntil?: string;
+      paymentAmountCents?: number;
+      paymentMethod?: "cash" | "pix" | "card" | "bank_transfer" | "other";
+    }) => {
+      const validUntil = data.validUntil
+        ? new Date(data.validUntil).getTime()
+        : undefined;
+
+      if (data.type === "add" && data.paymentAmountCents && data.paymentAmountCents > 0) {
+        void createPayment({
+          studentId: toStudentId(data.clientId),
+          amountCents: data.paymentAmountCents,
+          method: data.paymentMethod ?? "other",
+          status: "paid",
+          creditsGranted: data.amount,
+          creditsValidUntil: validUntil,
+          description: data.description,
+        });
+        return;
+      }
+
+      if (data.type === "add") {
+        void addManualCredits({
+          studentId: toStudentId(data.clientId),
+          amount: data.amount,
+          validUntil,
+          description: data.description,
+        });
+        return;
+      }
+
+      void consumeCredits({
+        studentId: toStudentId(data.clientId),
+        amount: data.amount,
+        description: data.description,
+      });
     },
-    []
+    [addManualCredits, consumeCredits, createPayment]
   );
 
   const addClassSlot = useCallback((data: Omit<ClassSlot, "id">) => {
@@ -195,6 +286,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const value = useMemo<DashboardContextValue>(
     () => ({
       ...state,
+      clients,
+      creditTransactions: convexCreditTransactions,
       getClientCredits,
       addClient,
       updateClient,
@@ -211,6 +304,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }),
     [
       state,
+      clients,
+      convexCreditTransactions,
       getClientCredits,
       addClient,
       updateClient,
