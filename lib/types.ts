@@ -1,6 +1,7 @@
 export type ClassStatus = "scheduled" | "completed" | "cancelled";
 
-export type CreditType = "add" | "use";
+/** Ajuste manual feito pelo professor no painel (pagamento ocorre fora do app). */
+export type CreditType = "add" | "remove";
 
 export interface Client {
   id: string;

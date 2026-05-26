@@ -73,7 +73,7 @@ export function AppSidebar() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-medium">Conta</p>
-            <p className="text-xs text-muted-foreground">Clerk ativo</p>
+            <p className="text-xs text-muted-foreground">Painel do professor</p>
           </div>
           <UserButton />
         </div>

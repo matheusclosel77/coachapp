@@ -120,7 +120,8 @@ export const addManual = mutation({
   },
 });
 
-export const consume = mutation({
+/** Remoção manual de créditos pelo professor (pagamento/ajuste fora do app). */
+export const remove = mutation({
   args: {
     studentId: v.id("students"),
     amount: v.number(),
@@ -147,20 +148,20 @@ export const consume = mutation({
           (!t.validUntil || t.validUntil >= now)
       )
       .reduce((sum, t) => sum + t.amount, 0);
-    const used = transactions
+    const removed = transactions
       .filter((t) => t.createdBy === user.id && t.amount < 0)
       .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    const available = activeAdded - used;
+    const available = activeAdded - removed;
 
     if (available < args.amount) {
-      throw new Error("Insufficient active credits");
+      throw new Error("Saldo de créditos ativos insuficiente");
     }
 
     return await ctx.db.insert("creditTransactions", {
       studentId: args.studentId,
       amount: -args.amount,
-      type: "use",
-      description: args.description?.trim() || "Créditos consumidos",
+      type: "adjustment",
+      description: args.description?.trim() || "Créditos removidos pelo professor",
       createdBy: user.id,
       createdAt: now,
     });

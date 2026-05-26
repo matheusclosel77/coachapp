@@ -132,12 +132,12 @@ export const initialData: DashboardState = {
   ],
   creditTransactions: [
     { id: "cr1", clientId: "c1", amount: 8, type: "add", description: "Plano 8 sessões/mês", date: "2025-04-01T14:00:00.000Z" },
-    { id: "cr2", clientId: "c1", amount: 1, type: "use", description: "Aula de condicionamento", date: weekDate(0, 7) },
+    { id: "cr2", clientId: "c1", amount: 1, type: "remove", description: "Aula de condicionamento", date: weekDate(0, 7) },
     { id: "cr3", clientId: "c3", amount: 36, type: "add", description: "Plano Premium trimestral", date: "2025-03-15T10:00:00.000Z" },
-    { id: "cr4", clientId: "c3", amount: 1, type: "use", description: "Treino de corrida", date: weekDate(2, 8) },
+    { id: "cr4", clientId: "c3", amount: 1, type: "remove", description: "Treino de corrida", date: weekDate(2, 8) },
     { id: "cr5", clientId: "c6", amount: 5, type: "add", description: "Pacote 5 sessões avulso", date: "2025-04-20T16:00:00.000Z" },
     { id: "cr6", clientId: "c2", amount: 4, type: "add", description: "Cortesia boas-vindas", date: "2025-02-05T10:00:00.000Z" },
-    { id: "cr7", clientId: "c2", amount: 1, type: "use", description: "Reabilitação joelho", date: weekDate(1, 10) },
+    { id: "cr7", clientId: "c2", amount: 1, type: "remove", description: "Reabilitação joelho", date: weekDate(1, 10) },
   ],
   classSlots: [
     { id: "s1", clientId: "c1", title: "Condicionamento", start: weekDate(0, 7), end: weekDate(0, 8), status: "scheduled" },

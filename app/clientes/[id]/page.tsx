@@ -222,7 +222,7 @@ export default function ClientePerfilPage({
                       <TableCell>{formatDate(tx.date)}</TableCell>
                       <TableCell>
                         <Badge variant={tx.type === "add" ? "default" : "secondary"}>
-                          {tx.type === "add" ? "Entrada" : "Saída"}
+                          {tx.type === "add" ? "Adicionado" : "Removido"}
                         </Badge>
                       </TableCell>
                       <TableCell>{tx.description}</TableCell>

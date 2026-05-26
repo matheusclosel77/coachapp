@@ -28,10 +28,10 @@ export default function CreditosPage() {
     [clients, getClientCredits]
   );
 
-  const usedThisMonth = useMemo(
+  const removedThisMonth = useMemo(
     () =>
       creditTransactions
-        .filter((t) => t.type === "use" && isThisMonth(parseISO(t.date)))
+        .filter((t) => t.type === "remove" && isThisMonth(parseISO(t.date)))
         .reduce((sum, t) => sum + t.amount, 0),
     [creditTransactions]
   );
@@ -52,11 +52,11 @@ export default function CreditosPage() {
     <div className="space-y-6">
       <PageHeader
         title="Créditos"
-        description="Acompanhe saldos e movimentações de créditos dos clientes."
+        description="Ajuste manual de créditos dos alunos. Pagamentos são feitos fora do app."
         actions={
           <Button onClick={() => setFormOpen(true)}>
             <Plus className="size-4" />
-            Movimentar créditos
+            Ajustar créditos
           </Button>
         }
       />
@@ -75,11 +75,11 @@ export default function CreditosPage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Consumidos no mês
+              Removidos no mês
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{usedThisMonth}</p>
+            <p className="text-3xl font-bold">{removedThisMonth}</p>
           </CardContent>
         </Card>
       </div>
@@ -112,7 +112,7 @@ export default function CreditosPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={tx.type === "add" ? "default" : "secondary"}>
-                      {tx.type === "add" ? "Entrada" : "Saída"}
+                      {tx.type === "add" ? "Adicionado" : "Removido"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">{tx.description}</TableCell>

@@ -37,10 +37,6 @@ export function CreditFormDialog({
   const [clientId, setClientId] = useState("");
   const [type, setType] = useState<CreditType>("add");
   const [amount, setAmount] = useState(1);
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<
-    "cash" | "pix" | "card" | "bank_transfer" | "other"
-  >("pix");
   const [validUntil, setValidUntil] = useState("");
   const [description, setDescription] = useState("");
 
@@ -49,8 +45,6 @@ export function CreditFormDialog({
       setClientId(preselectedClientId ?? "");
       setType("add");
       setAmount(1);
-      setPaymentAmount("");
-      setPaymentMethod("pix");
       setValidUntil("");
       setDescription("");
     }
@@ -63,13 +57,12 @@ export function CreditFormDialog({
       clientId,
       amount,
       type,
-      description: description.trim() || (type === "add" ? "Créditos adicionados" : "Créditos consumidos"),
-      validUntil: validUntil || undefined,
-      paymentAmountCents:
-        type === "add" && paymentAmount
-          ? Math.round(Number(paymentAmount.replace(",", ".")) * 100)
-          : undefined,
-      paymentMethod,
+      description:
+        description.trim() ||
+        (type === "add"
+          ? "Créditos adicionados pelo professor"
+          : "Créditos removidos pelo professor"),
+      validUntil: type === "add" ? validUntil || undefined : undefined,
     });
     onOpenChange(false);
   }
@@ -78,14 +71,17 @@ export function CreditFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Movimentar créditos</DialogTitle>
+          <DialogTitle>Ajustar créditos</DialogTitle>
         </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Pagamentos são feitos fora do app. Aqui você apenas registra créditos do aluno.
+        </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label>Cliente</Label>
+            <Label>Aluno</Label>
             <Select value={clientId} onValueChange={setClientId} required>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o cliente" />
+                <SelectValue placeholder="Selecione o aluno" />
               </SelectTrigger>
               <SelectContent>
                 {clients.map((c) => (
@@ -97,14 +93,14 @@ export function CreditFormDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Tipo</Label>
+            <Label>Ação</Label>
             <Select value={type} onValueChange={(v) => setType(v as CreditType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="add">Adicionar créditos</SelectItem>
-                <SelectItem value="use">Consumir créditos</SelectItem>
+                <SelectItem value="remove">Remover créditos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -120,58 +116,26 @@ export function CreditFormDialog({
             />
           </div>
           {type === "add" && (
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="payment-amount">Valor pago (R$)</Label>
-                <Input
-                  id="payment-amount"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  placeholder="Opcional"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Método</Label>
-                <Select
-                  value={paymentMethod}
-                  onValueChange={(v) =>
-                    setPaymentMethod(
-                      v as "cash" | "pix" | "card" | "bank_transfer" | "other"
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pix">Pix</SelectItem>
-                    <SelectItem value="card">Cartão</SelectItem>
-                    <SelectItem value="cash">Dinheiro</SelectItem>
-                    <SelectItem value="bank_transfer">Transferência</SelectItem>
-                    <SelectItem value="other">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <Label htmlFor="valid-until">Validade dos créditos</Label>
-                <Input
-                  id="valid-until"
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="valid-until">Validade dos créditos</Label>
+              <Input
+                id="valid-until"
+                type="date"
+                value={validUntil}
+                onChange={(e) => setValidUntil(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Deixe em branco se os créditos não expiram.
+              </p>
             </div>
           )}
           <div className="space-y-2">
-            <Label htmlFor="credit-desc">Descrição</Label>
+            <Label htmlFor="credit-desc">Observação</Label>
             <Textarea
               id="credit-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ex.: Pacote mensal pago via Pix"
               rows={2}
             />
           </div>

@@ -42,8 +42,6 @@ type DashboardContextValue = DashboardState & {
     type: CreditType;
     description: string;
     validUntil?: string;
-    paymentAmountCents?: number;
-    paymentMethod?: "cash" | "pix" | "card" | "bank_transfer" | "other";
   }) => void;
   addClassSlot: (data: Omit<ClassSlot, "id">) => ClassSlot;
   updateClassSlot: (id: string, data: Partial<Omit<ClassSlot, "id">>) => void;
@@ -65,8 +63,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const createStudent = useMutation(api.students.create);
   const updateStudent = useMutation(api.students.update);
   const addManualCredits = useMutation(api.credits.addManual);
-  const consumeCredits = useMutation(api.credits.consume);
-  const createPayment = useMutation(api.payments.create);
+  const removeCredits = useMutation(api.credits.remove);
 
   const clients = useMemo<Client[]>(
     () =>
@@ -87,7 +84,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         id: tx._id,
         clientId: tx.studentId,
         amount: Math.abs(tx.amount),
-        type: tx.amount >= 0 ? "add" : "use",
+        type: tx.amount >= 0 ? "add" : "remove",
         description: tx.description ?? "",
         date: new Date(tx.createdAt).toISOString(),
         validUntil: tx.validUntil ? new Date(tx.validUntil).toISOString() : undefined,
@@ -107,7 +104,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         )
         .reduce((sum, t) => sum + t.amount, 0);
       const used = convexCreditTransactions
-        .filter((t) => t.clientId === clientId && t.type === "use")
+        .filter((t) => t.clientId === clientId && t.type === "remove")
         .reduce((sum, t) => sum + t.amount, 0);
 
       return Math.max(activeAdded - used, 0);
@@ -194,14 +191,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
           contractSales: [...s.contractSales, sale],
         };
         if (option.creditsIncluded && option.creditsIncluded > 0) {
-          void createPayment({
+          void addManualCredits({
             studentId: toStudentId(data.clientId),
-            amountCents: Math.round(option.price * 100),
-            method: "other",
-            status: "paid",
-            creditsGranted: option.creditsIncluded,
-            creditsValidUntil: undefined,
-            description: `${contract.name} – ${option.label}`,
+            amount: option.creditsIncluded,
+            description: `${contract.name} – ${option.label} (venda de contrato)`,
           });
         }
         return next;
@@ -209,7 +202,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
       return sale;
     },
-    [createPayment, state.contracts]
+    [addManualCredits, state.contracts]
   );
 
   const addCreditTransaction = useCallback(
@@ -219,25 +212,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       type: CreditType;
       description: string;
       validUntil?: string;
-      paymentAmountCents?: number;
-      paymentMethod?: "cash" | "pix" | "card" | "bank_transfer" | "other";
     }) => {
       const validUntil = data.validUntil
         ? new Date(data.validUntil).getTime()
         : undefined;
-
-      if (data.type === "add" && data.paymentAmountCents && data.paymentAmountCents > 0) {
-        void createPayment({
-          studentId: toStudentId(data.clientId),
-          amountCents: data.paymentAmountCents,
-          method: data.paymentMethod ?? "other",
-          status: "paid",
-          creditsGranted: data.amount,
-          creditsValidUntil: validUntil,
-          description: data.description,
-        });
-        return;
-      }
 
       if (data.type === "add") {
         void addManualCredits({
@@ -249,13 +227,13 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      void consumeCredits({
+      void removeCredits({
         studentId: toStudentId(data.clientId),
         amount: data.amount,
         description: data.description,
       });
     },
-    [addManualCredits, consumeCredits, createPayment]
+    [addManualCredits, removeCredits]
   );
 
   const addClassSlot = useCallback((data: Omit<ClassSlot, "id">) => {
